@@ -1,0 +1,16 @@
+{
+    "name": "on2media/oauth2-sso-server",
+    "description": "OAuth2 single sign-on server",
+    "version": "0.1.0",
+    "type": "library",
+    "keywords": ["on2 media", "oauth2", "sso", "single sign-on"],
+    "license": "MIT",
+    "require": {
+        "bshaffer/oauth2-server-php": "~1.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "On2Media\\OAuth2SSOServer\\": "src/"
+        }
+    }
+}
