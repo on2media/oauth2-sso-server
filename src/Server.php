@@ -178,7 +178,7 @@ class Server
 
     public function handleAuthoriseRequest($base)
     {
-        (new AuthoriseRequest($this->server, $this->pdo))->handle($base);
+        return (new AuthoriseRequest($this->server, $this->pdo))->handle($base);
     }
 
     public function handleTokenRequest()
