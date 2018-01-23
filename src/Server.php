@@ -85,9 +85,9 @@ class Server
     public function getAvailabileClients($userId)
     {
         $sth = $this->pdo->prepare('SELECT
-                oauth_client_types.name AS client_type,
+                oauth_clients.name AS group_id,
                 oauth_clients.client_id AS id,
-                oauth_clients.name AS name,
+                oauth_client_types.name AS name,
                 oauth_clients.sso_home_url AS url
             FROM oauth_user_clients
             LEFT JOIN oauth_clients ON oauth_clients.client_id = oauth_user_clients.client_id
