@@ -18,14 +18,19 @@ class Server
         $this->timeout = $timeout;
         $this->storage = new AppStorage($this->pdo);
 
-        $this->server = new \OAuth2\Server($this->storage/*, ['access_lifetime' => 30]*/);
+        $this->server = new \OAuth2\Server(
+            $this->storage,
+            [
+                'refresh_token_lifetime' => $this->timeout,
+            ]
+        );
 
         $this->server->addGrantType(new \OAuth2\GrantType\AuthorizationCode($this->storage));
 
-        $grantType = new \OAuth2\GrantType\RefreshToken($this->storage,
+        $grantType = new \OAuth2\GrantType\RefreshToken(
+            $this->storage,
             [
-                // 'always_issue_new_refresh_token' => true,
-                // 'unset_refresh_token_after_use' => false,
+                'unset_refresh_token_after_use' => false,
             ]
         );
         $this->server->addGrantType($grantType);

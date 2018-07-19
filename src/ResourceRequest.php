@@ -24,7 +24,7 @@ class ResourceRequest
 
         $accessTokenData = $this->server->getAccessTokenData(\OAuth2\Request::createFromGlobals());
 
-        $sth = $this->pdo->prepare('SELECT session_id FROM oauth_user_sessions WHERE user_id = ? AND client_id = ? AND access_token = ?');
+        $sth = $this->pdo->prepare('SELECT session_id, refresh_token FROM oauth_user_sessions WHERE user_id = ? AND client_id = ? AND access_token = ?');
         $sth->execute(
             [
                 $accessTokenData['user_id'],
@@ -32,11 +32,14 @@ class ResourceRequest
                 $accessTokenData['access_token'],
             ]
         );
-        $sessionId = $sth->fetchColumn();
+        $sessionData = $sth->fetch(\PDO::FETCH_ASSOC);
+        $sessionId = $sessionData['session_id'];
 
         $sth = $this->pdo->prepare('SELECT * FROM oauth_users WHERE username = ?');
         $sth->execute([$accessTokenData['user_id']]);
         $user = $sth->fetch(\PDO::FETCH_ASSOC);
+
+        $timeout = time() + $this->server->getConfig('refresh_token_lifetime');
 
         if ($sessionId) {
 
@@ -58,6 +61,16 @@ class ResourceRequest
                     $accessTokenData['access_token'],
                 ]
             );
+
+            if ($sessionData['refresh_token'] !== null) {
+                $sth = $this->pdo->prepare('UPDATE oauth_refresh_tokens SET expires = ? WHERE refresh_token = ?');
+                $sth->execute(
+                    [
+                        date('Y-m-d H:i:s', $timeout),
+                        $sessionData['refresh_token'],
+                    ]
+                );
+            }
 
         }
 
