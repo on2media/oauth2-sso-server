@@ -63,13 +63,7 @@ class ResourceRequest
             );
 
             if ($sessionData['refresh_token'] !== null) {
-                $sth = $this->pdo->prepare('UPDATE oauth_refresh_tokens SET expires = ? WHERE refresh_token = ?');
-                $sth->execute(
-                    [
-                        date('Y-m-d H:i:s', $timeout),
-                        $sessionData['refresh_token'],
-                    ]
-                );
+                $ssoServer->extendRefreshTokenValidity($sessionId);
             }
 
         }

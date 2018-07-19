@@ -54,11 +54,28 @@ class Server
                 } else {
                     $sth = $this->pdo->prepare('UPDATE oauth_user_sessions SET last_activity = ? WHERE user_id = ? AND client_id IS NULL AND session_id = ?');
                     $sth->execute([date('Y-m-d H:i:s'), $_SESSION['user']['user_id'], session_id()]);
+                    $this->extendRefreshTokenValidity(session_id());
                 }
 
             }
 
         }
+    }
+
+    public function extendRefreshTokenValidity($sessionId)
+    {
+        $sth = $this->pdo->prepare(
+            'UPDATE oauth_refresh_tokens SET expires = ? WHERE refresh_token IN (
+                SELECT refresh_token FROM oauth_user_sessions
+                WHERE session_id = ? AND refresh_token IS NOT NULL
+            )'
+        );
+        $sth->execute(
+            [
+                date('Y-m-d H:i:s', time() + $this->timeout),
+                $sessionId,
+            ]
+        );
     }
 
     public function checkTimeout($userId, $sessionId = null)
