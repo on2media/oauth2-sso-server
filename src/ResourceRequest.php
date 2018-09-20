@@ -16,13 +16,15 @@ class ResourceRequest
 
     public function handle($ssoServer)
     {
+        $request = \OAuth2\Request::createFromGlobals();
+
         // Handle a request to a resource and authenticate the access token
-        if (!$this->server->verifyResourceRequest(\OAuth2\Request::createFromGlobals())) {
+        if (!$this->server->verifyResourceRequest($request)) {
             $this->server->getResponse()->send();
             die;
         }
 
-        $accessTokenData = $this->server->getAccessTokenData(\OAuth2\Request::createFromGlobals());
+        $accessTokenData = $this->server->getAccessTokenData($request);
 
         $sth = $this->pdo->prepare('SELECT session_id, refresh_token FROM oauth_user_sessions WHERE user_id = ? AND client_id = ? AND access_token = ?');
         $sth->execute(
@@ -39,8 +41,6 @@ class ResourceRequest
         $sth->execute([$accessTokenData['user_id']]);
         $user = $sth->fetch(\PDO::FETCH_ASSOC);
 
-        $timeout = time() + $this->server->getConfig('refresh_token_lifetime');
-
         if ($sessionId) {
 
             if (!$ssoServer->checkTimeout($accessTokenData['user_id'], $sessionId)) {
@@ -52,21 +52,40 @@ class ResourceRequest
 
             }
 
-            $sth = $this->pdo->prepare('UPDATE oauth_user_sessions SET last_activity = ? WHERE user_id = ? AND client_id = ? AND access_token = ?');
-            $sth->execute(
-                [
-                    date('Y-m-d H:i:s'),
-                    $accessTokenData['user_id'],
-                    $accessTokenData['client_id'],
-                    $accessTokenData['access_token'],
-                ]
-            );
+            $extendTimeout = ($request->headers('KEEP_TIMEOUT') != '1');
+
+            if ($extendTimeout) {
+
+                $lastActivityTime = new \DateTime();
+
+                $sth = $this->pdo->prepare('UPDATE oauth_user_sessions SET last_activity = ? WHERE user_id = ? AND client_id = ? AND access_token = ?');
+                $sth->execute(
+                    [
+                        $lastActivityTime->format('Y-m-d H:i:s'),
+                        $accessTokenData['user_id'],
+                        $accessTokenData['client_id'],
+                        $accessTokenData['access_token'],
+                    ]
+                );
+
+            } else {
+
+                $sth = $this->pdo->prepare('SELECT MAX(last_activity) FROM oauth_user_sessions WHERE session_id = ?');
+                $sth->execute([$sessionId]);
+                $lastActivityTime = \DateTime::createFromFormat('Y-m-d H:i:s', $sth->fetchColumn());
+
+            }
 
             if ($sessionData['refresh_token'] !== null) {
                 $ssoServer->extendRefreshTokenValidity($sessionId);
             }
 
         }
+
+        $timeout = clone($lastActivityTime);
+        $timeout->add(
+            new \DateInterval('PT' . $this->server->getConfig('refresh_token_lifetime') . 'S')
+        );
 
         $availableClients = $ssoServer->getAvailabileClients($accessTokenData['user_id'], $this->pdo);
 
@@ -78,6 +97,10 @@ class ResourceRequest
                 'name' => $user['name'],
                 'email' => $user['email'],
                 'your_client_id' => $accessTokenData['client_id'],
+                'timeout' => [
+                    'seconds' => $this->server->getConfig('refresh_token_lifetime'),
+                    'due_at' => $timeout->format(\DateTime::ATOM),
+                ],
                 'available_clients' => $availableClients,
             ]
         );
