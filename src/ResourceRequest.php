@@ -80,30 +80,35 @@ class ResourceRequest
                 $ssoServer->extendRefreshTokenValidity($sessionId);
             }
 
-        }
+            $timeout = clone($lastActivityTime);
+            $timeout->add(
+                new \DateInterval('PT' . $this->server->getConfig('refresh_token_lifetime') . 'S')
+            );
 
-        $timeout = clone($lastActivityTime);
-        $timeout->add(
-            new \DateInterval('PT' . $this->server->getConfig('refresh_token_lifetime') . 'S')
-        );
+            $timeoutData = [
+                'seconds' => $this->server->getConfig('refresh_token_lifetime'),
+                'due_at' => $timeout->format(\DateTime::ATOM),
+            ];
+
+        }
 
         $availableClients = $ssoServer->getAvailabileClients($accessTokenData['user_id']);
 
-        header('Content-Type: application/json');
+        $output = [
+            'id' => $accessTokenData['user_id'],
+            'name' => $user['name'],
+            'email' => $user['email'],
+            'your_client_id' => $accessTokenData['client_id'],
+            'timeout' => $timeoutData ?? null,
+            'available_clients' => $availableClients,
+            'teams' => $ssoServer->getTeams($accessTokenData['user_id']),
+        ];
 
-        echo json_encode(
-            [
-                'id' => $accessTokenData['user_id'],
-                'name' => $user['name'],
-                'email' => $user['email'],
-                'your_client_id' => $accessTokenData['client_id'],
-                'timeout' => [
-                    'seconds' => $this->server->getConfig('refresh_token_lifetime'),
-                    'due_at' => $timeout->format(\DateTime::ATOM),
-                ],
-                'available_clients' => $availableClients,
-                'teams' => $ssoServer->getTeams($accessTokenData['user_id']),
-            ]
-        );
+        if ($output['timeout'] === null) {
+            unset($output['timeout']);
+        }
+
+        header('Content-Type: application/json');
+        echo json_encode($output);
     }
 }
