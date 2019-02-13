@@ -146,9 +146,19 @@ class Server
                     'logo' => $firstTeamClient['team_logo'],
                     'clients' => [],
                 ];
+                $teamClientTypes = [];
+                foreach ($teamClients as $teamClient) {
+                    if (!isset($teamClientTypes[$teamClient['client_type_id']])) {
+                        $teamClientTypes[$teamClient['client_type_id']] = 0;
+                    }
+                    $teamClientTypes[$teamClient['client_type_id']]++;
+                }
                 foreach ($teamClients as $teamClient) {
                     $rtn[$teamName]['clients'][] = [
-                        'name' => (count($teamClients) == 1 ? $teamClient['client_type_name'] : $teamClient['name']),
+                        'name' => ($teamClientTypes[$teamClient['client_type_id']] == 1
+                            ? $teamClient['client_type_name']
+                            : $teamClient['name']
+                        ),
                         'href' => $teamClient['url'],
                         'brandmark' => $teamClient['client_type_brandmark'],
                     ];
