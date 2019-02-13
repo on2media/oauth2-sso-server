@@ -113,8 +113,10 @@ class Server
                 oauth_clients.sso_home_url AS url,
                 oauth_client_types.client_type_id AS client_type_id,
                 oauth_client_types.name AS client_type_name,
+                oauth_client_types.brandmark AS client_type_brandmark,
                 oauth_teams.team_id AS team_id,
                 oauth_teams.name AS team_name,
+                oauth_teams.logo AS team_logo,
                 oauth_clients.name AS client_name
             FROM oauth_user_clients
             LEFT JOIN oauth_clients ON oauth_clients.client_id = oauth_user_clients.client_id
@@ -125,6 +127,37 @@ class Server
 
         $sth->execute([$userId]);
         return $sth->fetchAll(\PDO::FETCH_ASSOC|\PDO::FETCH_GROUP);
+    }
+
+    public function getTeams($userId)
+    {
+        $clients = $this->getAvailabileClients($userId);
+
+        $rtn = [];
+        foreach ($clients as $teamName => $teamClients) {
+            if (!isset($rtn[$teamName])) {
+                $firstTeamClient = reset($teamClients);
+                if ($firstTeamClient['team_id'] === null) {
+                    continue;
+                }
+                $rtn[$teamName] = [
+                    'id' => $firstTeamClient['team_id'],
+                    'name' => $firstTeamClient['team_name'],
+                    'logo' => $firstTeamClient['team_logo'],
+                    'clients' => [],
+                ];
+                foreach ($teamClients as $teamClient) {
+                    $rtn[$teamName]['clients'][] = [
+                        'name' => (count($teamClients) == 1 ? $teamClient['client_type_name'] : $teamClient['name']),
+                        'href' => $teamClient['url'],
+                        'brandmark' => $teamClient['client_type_brandmark'],
+                    ];
+                }
+            }
+        }
+
+        ksort($rtn);
+        return array_values($rtn);
     }
 
     public function handleSignIn($base)
@@ -144,7 +177,7 @@ class Server
 
             if (!$this->storage->checkUserCredentials($_POST['username'], $_POST['password'])) {
                 if (!isset($_GET['sso'])) {
-                    $_SESSION['just_failed'] = true;
+                    $_SESSION['just_failed'] = $_POST['username'];
                 }
                 $queryAdditions = ['success' => 'false'];
             } else {
@@ -194,7 +227,7 @@ class Server
 
         if (isset($_SESSION['oauth2_request'])) {
             $sth = $this->pdo->prepare('
-                SELECT oauth_client_types.name AS type, oauth_clients.name AS name
+                SELECT oauth_client_types.name AS type, oauth_clients.name AS name, oauth_client_types.logo AS logo
                 FROM oauth_clients
                 LEFT JOIN oauth_client_types ON oauth_clients.client_type_id = oauth_client_types.client_type_id
                 WHERE client_id = ?

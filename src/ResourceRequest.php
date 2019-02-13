@@ -87,7 +87,7 @@ class ResourceRequest
             new \DateInterval('PT' . $this->server->getConfig('refresh_token_lifetime') . 'S')
         );
 
-        $availableClients = $ssoServer->getAvailabileClients($accessTokenData['user_id'], $this->pdo);
+        $availableClients = $ssoServer->getAvailabileClients($accessTokenData['user_id']);
 
         header('Content-Type: application/json');
 
@@ -102,6 +102,7 @@ class ResourceRequest
                     'due_at' => $timeout->format(\DateTime::ATOM),
                 ],
                 'available_clients' => $availableClients,
+                'teams' => $ssoServer->getTeams($accessTokenData['user_id']),
             ]
         );
     }
