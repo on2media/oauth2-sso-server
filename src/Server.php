@@ -249,6 +249,9 @@ class Server
 
     public function handleAuthoriseRequest($base)
     {
+        if (isset($_GET['just_timed_out'])) {
+            $_SESSION['timed_out'] = true;
+        }
         return (new AuthoriseRequest($this->server, $this->pdo))->handle($base);
     }
 
