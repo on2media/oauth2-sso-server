@@ -113,6 +113,7 @@ class Server
                 oauth_clients.sso_home_url AS url,
                 oauth_client_types.client_type_id AS client_type_id,
                 oauth_client_types.name AS client_type_name,
+                oauth_client_types.logo AS client_type_logo,
                 oauth_client_types.brandmark AS client_type_brandmark,
                 oauth_teams.team_id AS team_id,
                 oauth_teams.name AS team_name,
@@ -129,7 +130,7 @@ class Server
         return $sth->fetchAll(\PDO::FETCH_ASSOC|\PDO::FETCH_GROUP);
     }
 
-    public function getTeams($userId)
+    public function getTeams($userId, $clientId = null)
     {
         $clients = $this->getAvailabileClients($userId);
 
@@ -155,13 +156,19 @@ class Server
                 }
                 foreach ($teamClients as $teamClient) {
                     $rtn[$teamName]['clients'][] = [
+                        'id' => $teamClient['id'],
                         'name' => ($teamClientTypes[$teamClient['client_type_id']] == 1
                             ? $teamClient['client_type_name']
                             : $teamClient['name']
                         ),
                         'href' => $teamClient['url'],
+                        'type' => $teamClient['client_type_name'],
+                        'logo' => $teamClient['client_type_logo'],
                         'brandmark' => $teamClient['client_type_brandmark'],
                     ];
+                    if ($clientId !== null && $teamClient['id'] == $clientId) {
+                        $rtn[$teamName]['active'] = true;
+                    }
                 }
             }
         }
@@ -335,8 +342,6 @@ class Server
             ($ssoQueryParts == [] ? '' : '?' . http_build_query($ssoQueryParts)),
             (isset($ssoAuthUrl['fragment']) ? '#' . $ssoAuthUrl['fragment'] : '')
         );
-
-        // echo $rtnUrl; exit();
 
         header('Location: ' . $rtnUrl);
         exit();

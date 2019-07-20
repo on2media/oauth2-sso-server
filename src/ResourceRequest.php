@@ -96,12 +96,17 @@ class ResourceRequest
 
         $output = [
             'id' => $accessTokenData['user_id'],
+            'initials' => $user['initials'],
             'name' => $user['name'],
             'email' => $user['email'],
+            'avatar' => $user['avatar'],
             'your_client_id' => $accessTokenData['client_id'],
             'timeout' => $timeoutData ?? null,
             'available_clients' => $availableClients,
-            'teams' => $ssoServer->getTeams($accessTokenData['user_id']),
+            'teams' => $ssoServer->getTeams(
+                $accessTokenData['user_id'],
+                $accessTokenData['client_id']
+            ),
         ];
 
         if ($output['timeout'] === null) {
