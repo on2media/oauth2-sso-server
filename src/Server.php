@@ -178,6 +178,45 @@ class Server
         return array_values($rtn);
     }
 
+    public function getLoneWolves($userId)
+    {
+        $clients = $this->getAvailabileClients($userId);
+
+        $clientTypes = [];
+        foreach ($clients as $teamName => $teamClients) {
+            foreach ($teamClients as $teamClient) {
+                if ($teamClient['team_id'] !== null) {
+                    continue;
+                }
+                if (!isset($clientTypes[$teamClient['client_type_id']])) {
+                    $clientTypes[$teamClient['client_type_id']] = 0;
+                }
+                $clientTypes[$teamClient['client_type_id']]++;
+            }
+        }
+
+        $rtn = [];
+        foreach ($clients as $teamName => $teamClients) {
+            foreach ($teamClients as $teamClient) {
+                if ($teamClient['team_id'] !== null) {
+                    continue;
+                }
+                $rtn[] = [
+                    'id' => $teamClient['id'],
+                    'name' => ($clientTypes[$teamClient['client_type_id']] == 1
+                        ? $teamClient['client_type_name']
+                        : $teamClient['name']
+                    ),
+                    'href' => $teamClient['url'],
+                    'type' => $teamClient['client_type_name'],
+                    'logo' => $teamClient['client_type_logo'],
+                    'brandmark' => $teamClient['client_type_brandmark'],
+                ];
+            }
+        }
+        return $rtn;
+    }
+
     public function handleSignIn($base)
     {
         $queryAdditions = [];
