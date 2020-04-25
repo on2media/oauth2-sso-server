@@ -109,19 +109,20 @@ class Server
         $sth = $this->pdo->prepare('SELECT
                 IFNULL(oauth_teams.name, oauth_clients.name) AS group_id,
                 oauth_clients.client_id AS id,
-                CONCAT(oauth_client_types.name, IF(oauth_teams.name IS NULL, "", CONCAT(" for ", oauth_clients.name))) AS name,
-                oauth_clients.sso_home_url AS url,
+                CONCAT(oauth_client_types.name, " for ", oauth_clients.name) AS name,
+                CONCAT(oauth_clients.sso_home_url, IF(oauth_clients.suffix_team_id_to_home_url = 1, CONCAT("/", oauth_teams.team_id), "")) AS url,
                 oauth_client_types.client_type_id AS client_type_id,
                 oauth_client_types.name AS client_type_name,
                 oauth_client_types.logo AS client_type_logo,
                 oauth_client_types.brandmark AS client_type_brandmark,
-                oauth_teams.team_id AS team_id,
+                oauth_client_teams.team_id AS team_id,
                 oauth_teams.name AS team_name,
                 oauth_teams.logo AS team_logo,
                 oauth_clients.name AS client_name
             FROM oauth_user_clients
             LEFT JOIN oauth_clients ON oauth_clients.client_id = oauth_user_clients.client_id
-            LEFT JOIN oauth_teams ON oauth_clients.team_id = oauth_teams.team_id
+            LEFT JOIN oauth_client_teams ON oauth_client_teams.client_id = oauth_clients.client_id
+            LEFT JOIN oauth_teams ON oauth_client_teams.team_id = oauth_teams.team_id
             LEFT JOIN oauth_client_types ON oauth_client_types.client_type_id = oauth_clients.client_type_id
             WHERE oauth_clients.client_id IS NOT NULL AND oauth_user_clients.user_id = ?
         ');
