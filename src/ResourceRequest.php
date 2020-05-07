@@ -26,20 +26,29 @@ class ResourceRequest
 
         $accessTokenData = $this->server->getAccessTokenData($request);
 
-        $sth = $this->pdo->prepare('SELECT session_id, refresh_token FROM oauth_user_sessions WHERE user_id = ? AND client_id = ? AND access_token = ?');
-        $sth->execute(
-            [
-                $accessTokenData['user_id'],
-                $accessTokenData['client_id'],
-                $accessTokenData['access_token'],
-            ]
-        );
-        $sessionData = $sth->fetch(\PDO::FETCH_ASSOC);
-        $sessionId = $sessionData['session_id'];
+        if ($accessTokenData['user_id'] === null) {
 
-        $sth = $this->pdo->prepare('SELECT * FROM oauth_users WHERE username = ?');
-        $sth->execute([$accessTokenData['user_id']]);
-        $user = $sth->fetch(\PDO::FETCH_ASSOC);
+            $sessionId = false;
+            $user = null;
+
+        } else {
+
+            $sth = $this->pdo->prepare('SELECT session_id, refresh_token FROM oauth_user_sessions WHERE user_id = ? AND client_id = ? AND access_token = ?');
+            $sth->execute(
+                [
+                    $accessTokenData['user_id'],
+                    $accessTokenData['client_id'],
+                    $accessTokenData['access_token'],
+                ]
+            );
+            $sessionData = $sth->fetch(\PDO::FETCH_ASSOC);
+            $sessionId = $sessionData['session_id'] ?? false;
+
+            $sth = $this->pdo->prepare('SELECT * FROM oauth_users WHERE username = ?');
+            $sth->execute([$accessTokenData['user_id']]);
+            $user = $sth->fetch(\PDO::FETCH_ASSOC);
+
+        }
 
         if ($sessionId) {
 
@@ -96,10 +105,10 @@ class ResourceRequest
 
         $output = [
             'id' => $accessTokenData['user_id'],
-            'initials' => $user['initials'],
-            'name' => $user['name'],
-            'email' => $user['email'],
-            'avatar' => $user['avatar'],
+            'initials' => $user['initials'] ?? null,
+            'name' => $user['name'] ?? null,
+            'email' => $user['email'] ?? null,
+            'avatar' => $user['avatar'] ?? null,
             'your_client_id' => $accessTokenData['client_id'],
             'timeout' => $timeoutData ?? null,
             'available_clients' => $availableClients,
