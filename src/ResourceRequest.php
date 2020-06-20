@@ -101,8 +101,6 @@ class ResourceRequest
 
         }
 
-        $availableClients = $ssoServer->getAvailabileClients($accessTokenData['user_id']);
-
         $output = [
             'id' => $accessTokenData['user_id'],
             'initials' => $user['initials'] ?? null,
@@ -111,7 +109,7 @@ class ResourceRequest
             'avatar' => $user['avatar'] ?? null,
             'your_client_id' => $accessTokenData['client_id'],
             'timeout' => $timeoutData ?? null,
-            'available_clients' => $availableClients,
+            'available_clients' => [],
             'teams' => $ssoServer->getTeams(
                 $accessTokenData['user_id'],
                 $accessTokenData['client_id']

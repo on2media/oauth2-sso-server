@@ -104,46 +104,16 @@ class Server
         return true;
     }
 
-    public function getAvailabileClients($userId)
-    {
-        $sth = $this->pdo->prepare('SELECT
-                IFNULL(oauth_teams.name, oauth_clients.name) AS group_id,
-                oauth_clients.client_id AS id,
-                CONCAT(oauth_client_types.name, " for ", oauth_clients.name) AS name,
-                CONCAT(oauth_clients.sso_home_url, IF(oauth_clients.suffix_team_id_to_home_url = 1, CONCAT("/", oauth_teams.team_id), "")) AS url,
-                oauth_client_types.client_type_id AS client_type_id,
-                oauth_client_types.name AS client_type_name,
-                oauth_client_types.logo AS client_type_logo,
-                oauth_client_types.brandmark AS client_type_brandmark,
-                oauth_client_teams.team_id AS team_id,
-                oauth_teams.name AS team_name,
-                oauth_teams.logo AS team_logo,
-                oauth_clients.name AS client_name
-            FROM oauth_user_clients
-            LEFT JOIN oauth_clients ON oauth_clients.client_id = oauth_user_clients.client_id
-            LEFT JOIN oauth_client_teams ON oauth_client_teams.client_id = oauth_clients.client_id
-            LEFT JOIN oauth_teams ON oauth_client_teams.team_id = oauth_teams.team_id
-            LEFT JOIN oauth_client_types ON oauth_client_types.client_type_id = oauth_clients.client_type_id
-            WHERE oauth_clients.client_id IS NOT NULL AND oauth_user_clients.user_id = ?
-        ');
-
-        $sth->execute([$userId]);
-        return $sth->fetchAll(\PDO::FETCH_ASSOC|\PDO::FETCH_GROUP);
-    }
-
     public function getTeams($userId, $clientId = null)
     {
-        $clients = $this->getAvailabileClients($userId);
+        $teams = $this->storage->fetchTeams($userId);
 
         $rtn = [];
-        foreach ($clients as $teamName => $teamClients) {
-            if (!isset($rtn[$teamName])) {
+        foreach ($teams as $teamId => $teamClients) {
+            if (!isset($rtn[$teamId])) {
                 $firstTeamClient = reset($teamClients);
-                if ($firstTeamClient['team_id'] === null) {
-                    continue;
-                }
-                $rtn[$teamName] = [
-                    'id' => $firstTeamClient['team_id'],
+                $rtn[$teamId] = [
+                    'id' => $teamId,
                     'name' => $firstTeamClient['team_name'],
                     'logo' => $firstTeamClient['team_logo'],
                     'clients' => [],
@@ -156,63 +126,52 @@ class Server
                     $teamClientTypes[$teamClient['client_type_id']]++;
                 }
                 foreach ($teamClients as $teamClient) {
-                    $rtn[$teamName]['clients'][] = [
-                        'id' => $teamClient['id'],
+                    $rtn[$teamId]['clients'][] = [
+                        'id' => $teamClient['client_id'],
                         'name' => ($teamClientTypes[$teamClient['client_type_id']] == 1
                             ? $teamClient['client_type_name']
-                            : $teamClient['name']
+                            : sprintf('%s for %s', $teamClient['client_type_name'], $teamClient['client_name'])
                         ),
-                        'href' => $teamClient['url'],
+                        'href' => $teamClient['client_href'],
                         'type' => $teamClient['client_type_name'],
                         'logo' => $teamClient['client_type_logo'],
                         'brandmark' => $teamClient['client_type_brandmark'],
                     ];
-                    if ($clientId !== null && $teamClient['id'] == $clientId) {
-                        $rtn[$teamName]['active'] = true;
+                    if ($clientId !== null && $teamClient['client_id'] == $clientId) {
+                        $rtn[$teamId]['active'] = true;
                     }
                 }
             }
         }
 
-        ksort($rtn);
         return array_values($rtn);
     }
 
     public function getLoneWolves($userId)
     {
-        $clients = $this->getAvailabileClients($userId);
+        $clients = $this->storage->fetchLoneWolves($userId);
 
         $clientTypes = [];
-        foreach ($clients as $teamName => $teamClients) {
-            foreach ($teamClients as $teamClient) {
-                if ($teamClient['team_id'] !== null) {
-                    continue;
-                }
-                if (!isset($clientTypes[$teamClient['client_type_id']])) {
-                    $clientTypes[$teamClient['client_type_id']] = 0;
-                }
-                $clientTypes[$teamClient['client_type_id']]++;
+        foreach ($clients as $client) {
+            if (!isset($clientTypes[$client['client_type_id']])) {
+                $clientTypes[$client['client_type_id']] = 0;
             }
+            $clientTypes[$client['client_type_id']]++;
         }
 
         $rtn = [];
-        foreach ($clients as $teamName => $teamClients) {
-            foreach ($teamClients as $teamClient) {
-                if ($teamClient['team_id'] !== null) {
-                    continue;
-                }
-                $rtn[] = [
-                    'id' => $teamClient['id'],
-                    'name' => ($clientTypes[$teamClient['client_type_id']] == 1
-                        ? $teamClient['client_type_name']
-                        : $teamClient['name']
-                    ),
-                    'href' => $teamClient['url'],
-                    'type' => $teamClient['client_type_name'],
-                    'logo' => $teamClient['client_type_logo'],
-                    'brandmark' => $teamClient['client_type_brandmark'],
-                ];
-            }
+        foreach ($clients as $client) {
+            $rtn[] = [
+                'id' => $client['client_id'],
+                'name' => ($clientTypes[$client['client_type_id']] == 1
+                    ? $client['client_type_name']
+                    : sprintf('%s for %s', $client['client_type_name'], $client['client_name'])
+                ),
+                'href' => $client['client_href'],
+                'type' => $client['client_type_name'],
+                'logo' => $client['client_type_logo'],
+                'brandmark' => $client['client_type_brandmark'],
+            ];
         }
         return $rtn;
     }
