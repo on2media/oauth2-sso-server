@@ -62,6 +62,27 @@ SQL;
         $stmt->execute(compact('user_id'));
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
+
+    public function fetchAllClientTeams($client_id)
+    {
+        $stmt = $this->db->prepare('SELECT team_id FROM oauth_client_teams WHERE client_id = :client_id');
+        $stmt->execute(compact('client_id'));
+        return $stmt->fetchAll(\PDO::FETCH_COLUMN);
+    }
+
+    public function fetchClientTeamsForUser($client_id, $user_id)
+    {
+        $sql = <<<SQL
+SELECT DISTINCT ct.team_id
+FROM oauth_client_teams AS ct
+LEFT JOIN oauth_user_teams AS ut ON ut.team_id = ct.team_id
+WHERE ct.client_id = :client_id  AND ut.user_id = :user_id
+SQL;
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(compact('client_id', 'user_id'));
+        return $stmt->fetchAll(\PDO::FETCH_COLUMN);
+    }
 }
 
 // @todo addUser and rehashing -- // echo password_hash('password', PASSWORD_DEFAULT);

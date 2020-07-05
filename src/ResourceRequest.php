@@ -108,6 +108,10 @@ class ResourceRequest
             'email' => $user['email'] ?? null,
             'avatar' => $user['avatar'] ?? null,
             'your_client_id' => $accessTokenData['client_id'],
+            'your_clients_teams' => $ssoServer->getClientTeams(
+                $accessTokenData['client_id'],
+                $accessTokenData['user_id']
+            ),
             'timeout' => $timeoutData ?? null,
             'available_clients' => [],
             'teams' => $ssoServer->getTeams(

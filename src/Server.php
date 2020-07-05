@@ -176,6 +176,14 @@ class Server
         return $rtn;
     }
 
+    public function getClientTeams($clientId, $userId = null)
+    {
+        if ($userId === null) {
+            return $this->storage->fetchAllClientTeams($clientId);
+        }
+        return $this->storage->fetchClientTeamsForUser($clientId, $userId);
+    }
+
     public function handleSignIn($base)
     {
         $queryAdditions = [];
