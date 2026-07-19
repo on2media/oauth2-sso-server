@@ -21,7 +21,7 @@ class ResourceRequest
         // Handle a request to a resource and authenticate the access token
         if (!$this->server->verifyResourceRequest($request)) {
             $this->server->getResponse()->send();
-            die;
+            exit;
         }
 
         $accessTokenData = $this->server->getAccessTokenData($request);
@@ -57,7 +57,7 @@ class ResourceRequest
                 $response = new \OAuth2\Response();
                 $response->setError(401, 'invalid_token', 'The access token provided is invalid');
                 $response->send();
-                exit();
+                exit;
 
             }
 
@@ -89,9 +89,9 @@ class ResourceRequest
                 $ssoServer->extendRefreshTokenValidity($sessionId);
             }
 
-            $timeout = clone($lastActivityTime);
+            $timeout = clone $lastActivityTime;
             $timeout->add(
-                new \DateInterval('PT' . $this->server->getConfig('refresh_token_lifetime') . 'S')
+                new \DateInterval('PT'.$this->server->getConfig('refresh_token_lifetime').'S')
             );
 
             $timeoutData = [

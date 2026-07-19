@@ -22,20 +22,20 @@ class AuthoriseRequest
         // validate the authorize request
         if (!$this->server->validateAuthorizeRequest($request, $response)) {
             $response->send();
-            die;
+            exit;
         }
 
         $_SESSION['oauth2_request'] = $request->getAllQueryParameters();
 
         if (!isset($_SESSION['user'])) {
-            header('Location: ' . $base . '/sign-in');
-            exit();
+            header('Location: '.$base.'/sign-in');
+            exit;
         }
 
         // var_dump($_POST, !isset($_POST['authorized']));
 
         // display an authorization form
-        if (!isset($_POST['authorized'])/* || $_POST['authorized'] == 'No'*/) {
+        if (!isset($_POST['authorized'])/* || $_POST['authorized'] == 'No' */) {
 
             $sth = $this->pdo->prepare('SELECT * FROM oauth_user_clients WHERE user_id = ? AND client_id = ?');
             $sth->execute([$_SESSION['user']['username'], $_GET['client_id']]);
@@ -67,9 +67,9 @@ class AuthoriseRequest
         $userid = $_SESSION['user']['username'];
         $this->server->handleAuthorizeRequest($request, $response, $is_authorized, $userid);
         if ($is_authorized) {
-          // this is only here so that you get to see your code in the cURL request. Otherwise, we'd redirect back to the client
-          $code = substr($response->getHttpHeader('Location'), strpos($response->getHttpHeader('Location'), 'code=')+5, 40);
-          // exit("SUCCESS! Authorization Code: $code");
+            // this is only here so that you get to see your code in the cURL request. Otherwise, we'd redirect back to the client
+            $code = substr($response->getHttpHeader('Location'), strpos($response->getHttpHeader('Location'), 'code=') + 5, 40);
+            // exit("SUCCESS! Authorization Code: $code");
 
             $clientId = $this->server->getAuthorizeController()->getClientId();
 

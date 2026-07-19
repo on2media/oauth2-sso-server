@@ -30,7 +30,7 @@ class TokenRequest
                     [
                         $response->getParameter('refresh_token'),
                         $response->getParameter('access_token'),
-                        $request->request('code')
+                        $request->request('code'),
                     ]
                 );
 
@@ -41,7 +41,7 @@ class TokenRequest
                 $sth->execute(
                     [
                         $response->getParameter('access_token'),
-                        $request->request('refresh_token')
+                        $request->request('refresh_token'),
                     ]
                 );
 

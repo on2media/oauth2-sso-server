@@ -123,12 +123,13 @@ class Server
                     if (!isset($teamClientTypes[$teamClient['client_type_id']])) {
                         $teamClientTypes[$teamClient['client_type_id']] = 0;
                     }
-                    $teamClientTypes[$teamClient['client_type_id']]++;
+                    ++$teamClientTypes[$teamClient['client_type_id']];
                 }
                 foreach ($teamClients as $teamClient) {
                     $rtn[$teamId]['clients'][] = [
                         'id' => $teamClient['client_id'],
-                        'name' => ($teamClientTypes[$teamClient['client_type_id']] == 1
+                        'name' => (
+                            $teamClientTypes[$teamClient['client_type_id']] == 1
                             ? $teamClient['client_type_name']
                             : sprintf('%s for %s', $teamClient['client_type_name'], $teamClient['client_name'])
                         ),
@@ -156,14 +157,15 @@ class Server
             if (!isset($clientTypes[$client['client_type_id']])) {
                 $clientTypes[$client['client_type_id']] = 0;
             }
-            $clientTypes[$client['client_type_id']]++;
+            ++$clientTypes[$client['client_type_id']];
         }
 
         $rtn = [];
         foreach ($clients as $client) {
             $rtn[] = [
                 'id' => $client['client_id'],
-                'name' => ($clientTypes[$client['client_type_id']] == 1
+                'name' => (
+                    $clientTypes[$client['client_type_id']] == 1
                     ? $client['client_type_name']
                     : sprintf('%s for %s', $client['client_type_name'], $client['client_name'])
                 ),
@@ -223,15 +225,15 @@ class Server
 
                 if (isset($_SESSION['oauth2_request'])) {
                     $q = http_build_query($_SESSION['oauth2_request']);
-                    header('Location: ' . $base . '/authorize?' . $q);
-                    exit();
+                    header('Location: '.$base.'/authorize?'.$q);
+                    exit;
                 }
 
             }
 
             if (!isset($_GET['sso'])) {
-                header('Location: ' . $base . '/');
-                exit();
+                header('Location: '.$base.'/');
+                exit;
             }
 
         } elseif (isset($_SESSION['user'])) {
@@ -245,8 +247,8 @@ class Server
         }
 
         if (isset($_SESSION['user'])) {
-            header('Location: ' . $base . '/');
-            exit();
+            header('Location: '.$base.'/');
+            exit;
         }
 
         if (isset($_SESSION['oauth2_request'])) {
@@ -291,7 +293,7 @@ class Server
 
         $hash = hash_hmac(
             'sha1',
-            $_GET['client'] . $_GET['nonce'],
+            $_GET['client'].$_GET['nonce'],
             $client['client_secret']
         );
 
@@ -341,16 +343,16 @@ class Server
 
         $rtnUrl = sprintf(
             '%s//%s%s%s%s%s%s',
-            (isset($ssoAuthUrl['scheme']) ? $ssoAuthUrl['scheme'] . ':' : ''),
-            (isset($ssoAuthUrl['user'], $ssoAuthUrl['pass']) ? $ssoAuthUrl['user'] . ':' . $ssoAuthUrl['pass'] . '@' : ''),
+            isset($ssoAuthUrl['scheme']) ? $ssoAuthUrl['scheme'].':' : '',
+            isset($ssoAuthUrl['user'], $ssoAuthUrl['pass']) ? $ssoAuthUrl['user'].':'.$ssoAuthUrl['pass'].'@' : '',
             $ssoAuthUrl['host'],
-            (isset($ssoAuthUrl['port']) ? ':' . $ssoAuthUrl['port'] : ''),
+            isset($ssoAuthUrl['port']) ? ':'.$ssoAuthUrl['port'] : '',
             $ssoAuthUrl['path'],
-            ($ssoQueryParts == [] ? '' : '?' . http_build_query($ssoQueryParts)),
-            (isset($ssoAuthUrl['fragment']) ? '#' . $ssoAuthUrl['fragment'] : '')
+            $ssoQueryParts == [] ? '' : '?'.http_build_query($ssoQueryParts),
+            isset($ssoAuthUrl['fragment']) ? '#'.$ssoAuthUrl['fragment'] : ''
         );
 
-        header('Location: ' . $rtnUrl);
-        exit();
+        header('Location: '.$rtnUrl);
+        exit;
     }
 }
