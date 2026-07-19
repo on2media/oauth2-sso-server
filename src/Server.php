@@ -268,17 +268,17 @@ class Server
         if (isset($_GET['just_timed_out'])) {
             $_SESSION['timed_out'] = true;
         }
-        return (new AuthoriseRequest($this->server, $this->pdo))->handle($base);
+        return new AuthoriseRequest($this->server, $this->pdo)->handle($base);
     }
 
     public function handleTokenRequest()
     {
-        (new TokenRequest($this->server, $this->pdo))->handle();
+        new TokenRequest($this->server, $this->pdo)->handle();
     }
 
     public function handleResourceRequest()
     {
-        (new ResourceRequest($this->server, $this->pdo))->handle($this);
+        new ResourceRequest($this->server, $this->pdo)->handle($this);
     }
 
     public function ssoSignIn()
